@@ -1,9 +1,12 @@
 package x8rpc
 
 import (
+	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"sync"
 )
+
+const defaultPool = 20
 
 type Connection struct {
 	Handler *grpc.ClientConn
@@ -22,6 +25,20 @@ var (
 	instance *ConnectionPool
 	once     sync.Once
 )
+
+// GetDefaultPool 获取默认连接池的单例
+func GetDefaultPool(serverName string) *ConnectionPool {
+	address := viper.GetString("grpc." + serverName)
+	once.Do(func() {
+		instance = &ConnectionPool{
+			connections: make(chan *Connection, defaultPool),
+			address:     address,
+			maxSize:     defaultPool,
+			nextID:      0,
+		}
+	})
+	return instance
+}
 
 // GetConnectionPool 获取连接池的单例
 func GetConnectionPool(address string, maxSize int) *ConnectionPool {
