@@ -22,35 +22,45 @@ type ConnectionPool struct {
 }
 
 var (
-	instance *ConnectionPool
-	once     sync.Once
+	pools     = make(map[string]*ConnectionPool) // 使用 map 来存储多个连接池
+	poolsLock sync.RWMutex                       // 为了安全地读写连接池，使用读写锁
 )
 
 // GetDefaultPool 获取默认连接池的单例
 func GetDefaultPool(serverName string) *ConnectionPool {
 	address := viper.GetString("grpc." + serverName)
-	once.Do(func() {
-		instance = &ConnectionPool{
-			connections: make(chan *Connection, defaultPool),
-			address:     address,
-			maxSize:     defaultPool,
-			nextID:      0,
-		}
-	})
-	return instance
+	return GetConnectionPool(address, defaultPool)
 }
 
-// GetConnectionPool 获取连接池的单例
+// GetConnectionPool 获取连接池，根据不同的 address 创建单独的池
 func GetConnectionPool(address string, maxSize int) *ConnectionPool {
-	once.Do(func() {
-		instance = &ConnectionPool{
-			connections: make(chan *Connection, maxSize),
-			address:     address,
-			maxSize:     maxSize,
-			nextID:      0,
-		}
-	})
-	return instance
+	poolsLock.RLock() // 使用读锁防止在获取时的并发问题
+	pool, exists := pools[address]
+	poolsLock.RUnlock()
+
+	// 如果连接池已存在，直接返回
+	if exists {
+		return pool
+	}
+
+	// 如果池不存在，创建一个新的连接池
+	poolsLock.Lock() // 获取写锁来创建新池
+	defer poolsLock.Unlock()
+
+	// 防止并发情况下多次创建相同的连接池
+	if pool, exists := pools[address]; exists {
+		return pool
+	}
+
+	// 创建并初始化新的连接池
+	pool = &ConnectionPool{
+		connections: make(chan *Connection, maxSize),
+		address:     address,
+		maxSize:     maxSize,
+		nextID:      0,
+	}
+	pools[address] = pool
+	return pool
 }
 
 // Get 获取连接
