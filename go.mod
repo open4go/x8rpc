@@ -4,6 +4,7 @@ go 1.22.3
 
 require (
 	github.com/open4go/log v0.0.16
+	github.com/open4go/x9proto v0.0.23
 	github.com/spf13/viper v1.19.0
 	google.golang.org/grpc v1.70.0
 )
@@ -73,7 +74,7 @@ require (
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
-	google.golang.org/protobuf v1.36.3 // indirect
+	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	gotest.tools/v3 v3.5.2 // indirect
