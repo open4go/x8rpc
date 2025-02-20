@@ -4,7 +4,7 @@ go 1.22.3
 
 require (
 	github.com/open4go/log v0.0.16
-	github.com/open4go/x9proto v0.0.25
+	github.com/open4go/x9proto v0.0.26
 	github.com/spf13/viper v1.19.0
 	google.golang.org/grpc v1.70.0
 )
