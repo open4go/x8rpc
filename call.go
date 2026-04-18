@@ -14,7 +14,7 @@ func CallGrpcService[T any](
 	serviceMethod func(client T, ctx context.Context) (any, error),
 ) (any, error) {
 	// 获取连接池
-	pool := GetDefaultPool(serverName)
+	pool := GetDefaultPool(ctx, serverName)
 
 	// 获取连接
 	conn, err := pool.Get()
