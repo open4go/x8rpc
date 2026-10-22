@@ -121,6 +121,7 @@ func (p *ConnectionPool) createNewConnection() (*Connection, error) {
 	conn, err := grpc.DialContext(ctx, p.address, //nolint:staticcheck // SA1019: 1.x 内仍受支持
 		grpc.WithTransportCredentials(insecure.NewCredentials()), // 生产环境建议换成 TLS
 		grpc.WithBlock(), //nolint:staticcheck // SA1019: 1.x 内仍受支持
+		grpc.WithUnaryInterceptor(clientTokenInterceptor), // 服务间令牌（rpc.auth_token）
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                30 * time.Second,
 			Timeout:             10 * time.Second,
