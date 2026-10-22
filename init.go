@@ -10,6 +10,7 @@ import (
 	"github.com/spf13/viper"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/connectivity"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/keepalive"
 )
 
@@ -94,7 +95,7 @@ func (p *ConnectionPool) Get() (*Connection, error) {
 			return conn, nil
 		}
 		// 状态不对，关闭旧连接，创建新连接
-		conn.Handler.Close()
+		_ = conn.Handler.Close()
 	default:
 		// 池为空，继续往下创建新连接
 	}
@@ -116,9 +117,10 @@ func (p *ConnectionPool) createNewConnection() (*Connection, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), dialTimeout)
 	defer cancel()
 
-	conn, err := grpc.DialContext(ctx, p.address,
-		grpc.WithInsecure(), // 生产环境建议换成 TLS
-		grpc.WithBlock(),
+	// 保留 DialContext + WithBlock 的阻塞建连语义（NewClient 不支持 WithBlock，行为不同）
+	conn, err := grpc.DialContext(ctx, p.address, //nolint:staticcheck // SA1019: 1.x 内仍受支持
+		grpc.WithTransportCredentials(insecure.NewCredentials()), // 生产环境建议换成 TLS
+		grpc.WithBlock(), //nolint:staticcheck // SA1019: 1.x 内仍受支持
 		grpc.WithKeepaliveParams(keepalive.ClientParameters{
 			Time:                30 * time.Second,
 			Timeout:             10 * time.Second,
@@ -150,7 +152,7 @@ func (p *ConnectionPool) Put(conn *Connection) {
 		// 放回成功
 	default:
 		// 连接池已满，关闭连接
-		conn.Handler.Close()
+		_ = conn.Handler.Close()
 		log.Log(p.ctx).Warnf("Connection pool full, closed connection ID: %d", conn.ID)
 	}
 }
@@ -164,7 +166,7 @@ func (p *ConnectionPool) Close() {
 		select {
 		case conn := <-p.connections:
 			if conn != nil && conn.Handler != nil {
-				conn.Handler.Close()
+				_ = conn.Handler.Close()
 			}
 		default:
 			return
